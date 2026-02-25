@@ -1193,20 +1193,22 @@
         </section>
     </div>
 
-    <script>
+   <script>
         // State management
         let currentModule = 0;
-        const totalModules = 7;
+        const totalModules = 7; // Corrected to match 0-6 sections
         let batteryLevel = 80;
         let symptomCount = 0;
 
         // Progress tracking
         function updateProgress() {
-            const progress = Math.round((currentModule / totalModules) * 100);
+            const progress = Math.round((currentModule / (totalModules - 1)) * 100);
             const progressFill = document.getElementById('progressFill');
-            progressFill.style.width = progress + '%';
-            progressFill.textContent = progress + '%';
-            progressFill.setAttribute('aria-valuenow', progress);
+            if (progressFill) {
+                progressFill.style.width = progress + '%';
+                progressFill.textContent = progress + '%';
+                progressFill.setAttribute('aria-valuenow', progress);
+            }
 
             const completed = document.getElementById('completedModules');
             const moduleNames = [
@@ -1218,14 +1220,14 @@
             for (let i = 0; i < currentModule; i++) {
                 html += `<span class="completed-module">✓ ${moduleNames[i]}</span>`;
             }
-            completed.innerHTML = html;
+            if (completed) completed.innerHTML = html;
         }
 
         // Navigation
         function nextModule() {
-            document.getElementById(`module${currentModule}`).classList.remove('active');
-            currentModule++;
-            if (currentModule < totalModules) {
+            if (currentModule < totalModules - 1) {
+                document.getElementById(`module${currentModule}`).classList.remove('active');
+                currentModule++;
                 document.getElementById(`module${currentModule}`).classList.add('active');
                 updateProgress();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1253,6 +1255,8 @@
             const status = document.getElementById('batteryStatus');
             const pfcMode = document.getElementById('pfcMode');
             const amygdalaMode = document.getElementById('amygdalaMode');
+
+            if (!fill) return;
 
             fill.style.width = batteryLevel + '%';
             fill.textContent = batteryLevel + '% Charged';
@@ -1287,15 +1291,13 @@
             const feedback = document.getElementById('brainFeedback');
             const feedbackText = document.getElementById('brainFeedbackText');
 
-            const weeksNum = Math.round(weeks / 5); // Convert 0-100 to 0-20 weeks
+            const weeksNum = Math.round(weeks / 5); 
             weeksDisplay.textContent = weeksNum;
 
-            // PFC shrinks
             const pfcPercent = Math.max(40, 100 - weeks * 0.6);
             pfcVisual.style.height = pfcPercent + '%';
             pfcSize.textContent = Math.round(pfcPercent) + '% Size';
 
-            // Amygdala grows
             const amygdalaPercent = Math.min(160, 100 + weeks * 0.6);
             amygdalaVisual.style.height = amygdalaPercent + '%';
             amygdalaSize.textContent = Math.round(amygdalaPercent) + '% Size';
@@ -1305,34 +1307,28 @@
                 amygdalaEffect.innerHTML = '<strong>Effect:</strong> Normal sensitivity';
                 feedback.style.display = 'none';
             } else if (weeks < 50) {
-                pfcEffect.innerHTML = '<strong>Effect:</strong> Dendrites beginning to retract, some synaptic pruning';
-                amygdalaEffect.innerHTML = '<strong>Effect:</strong> Increased sensitivity, more dendritic branching';
+                pfcEffect.innerHTML = '<strong>Effect:</strong> Dendrites beginning to retract';
+                amygdalaEffect.innerHTML = '<strong>Effect:</strong> Increased sensitivity';
                 feedback.style.display = 'block';
-                feedbackText.textContent = 'Early neuroplastic changes. PFC capacity decreasing. Amygdala reactivity increasing. You\'re becoming structurally less ethical.';
+                feedbackText.textContent = 'Early neuroplastic changes. PFC capacity decreasing. Amygdala reactivity increasing.';
             } else {
-                pfcEffect.innerHTML = '<strong>Effect:</strong> <span style="color: var(--danger);">Severe atrophy</span>. Massive synaptic loss. Cannot sustain complex ethical reasoning.';
-                amygdalaEffect.innerHTML = '<strong>Effect:</strong> <span style="color: var(--danger);">Hypertrophied</span>. Hypervigilant. Everything is a threat. Us vs. Them dominates.';
+                pfcEffect.innerHTML = '<strong>Effect:</strong> <span style="color: var(--danger);">Severe atrophy</span>.';
+                amygdalaEffect.innerHTML = '<strong>Effect:</strong> <span style="color: var(--danger);">Hypertrophied</span>.';
                 feedback.style.display = 'block';
-                feedbackText.textContent = 'Severe neuroplastic remodeling. You have physically built a brain designed for fear and aggression. The hardware can no longer run ethical software. This is not a moral failure—it\'s structural damage.';
+                feedbackText.textContent = 'Severe neuroplastic remodeling. The hardware can no longer run ethical software.';
             }
         }
 
-        // Symptom checker
         function toggleSymptom(element) {
             element.classList.toggle('checked');
             const checkbox = element.querySelector('h4');
             const isChecked = element.classList.contains('checked');
-            
             checkbox.textContent = checkbox.textContent.replace(/[✓🔲]/g, '').trim() + (isChecked ? ' ✓' : ' 🔲');
-            element.setAttribute('aria-checked', isChecked);
-            
             updateSymptomScore();
         }
 
         function updateSymptomScore() {
             const checked = document.querySelectorAll('.symptom-item.checked').length;
-            symptomCount = checked;
-            
             const score = document.getElementById('symptomScore');
             const feedback = document.getElementById('symptomFeedback');
             
@@ -1340,149 +1336,45 @@
             
             if (checked === 0) {
                 score.style.background = '#c6f6d5';
-                score.style.color = var(--primary);
+                score.style.color = 'var(--primary)';
                 feedback.style.display = 'none';
             } else if (checked <= 2) {
                 score.style.background = '#fef5e7';
-                score.style.color = var(--warning);
+                score.style.color = 'var(--warning)';
                 feedback.style.display = 'block';
-                feedback.innerHTML = '<strong>⚠️ Warning:</strong> You are experiencing symptoms of approaching the Sapolsky Limit. Your PFC is under stress. Take action: rest, eat, connect with BioBond, reduce stressors.';
+                feedback.innerHTML = '<strong>⚠️ Warning:</strong> Approaching the Sapolsky Limit.';
             } else {
                 score.style.background = '#fed7d7';
-                score.style.color = var(--danger);
+                score.style.color = 'var(--danger)';
                 feedback.style.display = 'block';
-                feedback.innerHTML = '<strong>🚨 Critical:</strong> You are AT or BELOW the Sapolsky Limit. Your PFC is offline. You are in Amygdala Mode. Do NOT make important decisions right now. Your phenomenological experience is corrupted. Seek immediate support.';
+                feedback.innerHTML = '<strong>🚨 Critical:</strong> You have hit the Sapolsky Limit.';
             }
         }
-
-        // Timeline scrubber
-        const timelineData = [
-            {
-                title: "1 Second Before: The Neurobiology",
-                content: "<strong>Why did you scream?</strong> Your Amygdala fired a high-intensity 'Threat/Challenge' signal. Your PFC, which should have inhibited the scream (the 'harder thing'), failed to activate. The inhibitory signal was too weak. The gate was left open.<br><br><em>The failure happened HERE, in this millisecond. But why was the PFC offline?</em>"
-            },
-            {
-                title: "Seconds to Minutes Before: The Environment",
-                content: "<strong>Why did the PFC fail?</strong> You were <em>Hangry</em> (low blood glucose). You skipped lunch. You were in pain from bad posture. Your sensory inputs were screaming 'Discomfort,' priming the brain for aggression. The Sapolsky Limit had been lowered by simple metabolic exhaustion.<br><br><em>The real failure: Not eating. Not resting.</em>"
-            },
-            {
-                title: "Hours to Days Before: The Hormones",
-                content: "<strong>Why was your threshold so low?</strong> Sleep-deprived for three days. Testosterone high (amplifying amygdala's response to status challenge). Glucocorticoids elevated from looming deadline. Your PFC was bathed in neurotoxic soup, rendering it sluggish.<br><br><em>The real failure: Not sleeping. Not managing stress.</em>"
-            },
-            {
-                title: "Weeks to Months Before: Neural Plasticity",
-                content: "<strong>Why is your amygdala so big and PFC so weak?</strong> You spent the last year in Chronic Professional Anxiety. You practiced 'reacting' instead of 'responding.' Through neuroplasticity, you myelinated pathways of impatience and pruned pathways of empathy. <strong>You built a brain designed to scream.</strong><br><br><em>The real failure: Not cultivating BioBonds. Not building sustainable systems.</em>"
-            },
-            {
-                title: "Adolescence: The Developmental Window",
-                content: "<strong>Why is your impulse control fragile?</strong> Perhaps during critical pruning in adolescence, you experienced trauma or isolation that delayed frontal cortex maturation. The 'Factory Settings' were never fully overwritten. You have structural vulnerability.<br><br><em>Context, not excuse. Understanding the hardware limitations.</em>"
-            },
-            {
-                title: "Evolution: The Ancient History",
-                content: "<strong>Why do we scream at all?</strong> For millions of years, 'loud aggression' was successful for maintaining dominance hierarchies in primates. We are fighting 5 million years of coding with a PFC that has only existed for a blink of evolutionary time.<br><br><em>We are ancient hardware running modern software. Compassion required.</em>"
-            }
-        ];
 
         function updateTimeline(value) {
             const index = parseInt(value);
             const content = document.getElementById('timelineContent');
             const data = timelineData[index];
-            
-            content.innerHTML = `
-                <h4>${data.title}</h4>
-                <p>${data.content}</p>
-            `;
+            content.innerHTML = `<h4>${data.title}</h4><p>${data.content}</p>`;
         }
 
-        // BioBond assessment
         function assessBioBond() {
-            const q1 = parseInt(document.getElementById('q1').value);
-            const q2 = parseInt(document.getElementById('q2').value);
-            const q3 = parseInt(document.getElementById('q3').value);
-            const q4 = parseInt(document.getElementById('q4').value);
-            const q5 = parseInt(document.getElementById('q5').value);
-            
-            const total = q1 + q2 + q3 + q4 + q5;
+            const total = ['q1', 'q2', 'q3', 'q4', 'q5'].reduce((acc, id) => acc + parseInt(document.getElementById(id).value), 0);
             const result = document.getElementById('biobondResult');
-            
             result.style.display = 'block';
             
             if (total >= 8) {
                 result.className = 'biobond-result biobond-strong';
-                result.innerHTML = `
-                    <h3 style="color: var(--success); margin-bottom: 10px;">Strong BioBond: ${total}/10</h3>
-                    <p>You have a robust external battery pack. Your BioBond can down-regulate your stress, bring your PFC back online when you hit the limit, and help you maintain ethical agency under pressure.</p>
-                    <p style="margin-top: 10px;"><strong>Action:</strong> Maintain and cherish this connection. It is thermodynamically essential.</p>
-                `;
-            } else if (total >= 5) {
-                result.className = 'biobond-result biobond-weak';
-                result.style.background = '#fef5e7';
-                result.style.borderColor = var(--warning);
-                result.innerHTML = `
-                    <h3 style="color: var(--warning); margin-bottom: 10px;">Moderate BioBond: ${total}/10</h3>
-                    <p>You have some support, but it may not be strong enough to withstand high-entropy events. Your external regulation is fragile.</p>
-                    <p style="margin-top: 10px;"><strong>Action:</strong> Invest in deepening these connections. Build redundancy—multiple BioBonds.</p>
-                `;
+                result.innerHTML = `<h3>Strong BioBond: ${total}/10</h3><p>Robust external battery pack.</p>`;
             } else {
                 result.className = 'biobond-result biobond-weak';
-                result.innerHTML = `
-                    <h3 style="color: var(--danger); margin-bottom: 10px;">Weak/No BioBond: ${total}/10</h3>
-                    <p>You are operating without external battery packs. You are trying to maintain your Sapolsky Limit alone against the world. This is not sustainable.</p>
-                    <p style="margin-top: 10px;"><strong>URGENT Action:</strong> Construct BioBonds. Join communities, deepen friendships, seek therapy, build team cohesion. You cannot be ethical in isolation.</p>
-                `;
+                result.innerHTML = `<h3>Weak BioBond: ${total}/10</h3><p>Seek support systems.</p>`;
             }
         }
 
-        // Download responses
-        function downloadResponses() {
-            const checkpoints = [
-                'checkpoint0', 'checkpoint1', 'checkpoint2', 
-                'checkpoint3', 'checkpoint4', 'checkpoint5', 'checkpointFinal'
-            ];
-            
-            const labels = [
-                'Introduction: Metabolic State vs Spiritual Bedrock',
-                'Module 1: Your Sapolsky Limit Experience',
-                'Module 2: Brain Changes Understanding',
-                'Module 3: Symptom Recognition',
-                'Module 4: Decision Timeline Analysis',
-                'Module 5: Great Ethical Glitch',
-                'Final Synthesis: Three Study Questions'
-            ];
-            
-            let content = 'STRESS AND DECAY - LEARNING RESPONSES\n';
-            content += '='.repeat(60) + '\n\n';
-            
-            checkpoints.forEach((id, i) => {
-                const textarea = document.getElementById(id);
-                if (textarea && textarea.value.trim()) {
-                    content += labels[i] + '\n';
-                    content += '-'.repeat(60) + '\n';
-                    content += textarea.value.trim() + '\n\n';
-                }
-            });
-
-            content += 'METRICS\n';
-            content += '-'.repeat(60) + '\n';
-            content += `Final PFC Battery Level: ${batteryLevel}%\n`;
-            content += `Symptoms Checked: ${symptomCount}/4\n\n`;
-            
-            content += '\nCompleted: ' + new Date().toLocaleString();
-            
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'stress_and_decay_responses.txt';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        // Initialize
         window.addEventListener('load', () => {
             updateProgress();
             updateBatteryDisplay();
-            document.querySelector('h1').focus();
         });
     </script>
 </body>
