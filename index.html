@@ -1184,6 +1184,9 @@
                 <button onclick="downloadResponses()" class="success" style="margin-top: 15px;">
                     📥 Download Your Responses
                 </button>
+                <button onclick="printResponses()" class="primary" style="margin-top: 15px; margin-left: 10px;">
+                    🖨️ Print Your Responses
+                </button>
             </div>
 
             <div class="navigation">
@@ -1196,9 +1199,37 @@
    <script>
         // State management
         let currentModule = 0;
-        const totalModules = 7; // Corrected to match 0-6 sections
+        const totalModules = 7;
         let batteryLevel = 80;
         let symptomCount = 0;
+
+        // Timeline data for the decision timeline module
+        const timelineData = [
+            {
+                title: "1 Second Before: The Neurobiology",
+                content: "<strong>Why did you scream?</strong> Your Amygdala fired a high-intensity 'Threat/Challenge' signal. Your PFC, which should have inhibited the scream (the 'harder thing'), failed to activate. The inhibitory signal was too weak. The gate was left open.<br><br><em>The failure happened HERE, in this millisecond. But why was the PFC offline?</em>"
+            },
+            {
+                title: "Minutes Before: Blood Sugar & Hormones",
+                content: "<strong>Why was your PFC offline?</strong> You skipped lunch. Your blood glucose was low. Your cortisol was elevated from morning stress. The PFC is metabolically expensive—it needs fuel. Without glucose, it literally cannot fire. The hardware was already compromised."
+            },
+            {
+                title: "Hours Before: Sleep Deprivation",
+                content: "<strong>Why was your cortisol high?</strong> You only slept 4 hours last night. Sleep deprivation elevates baseline cortisol and impairs PFC function. Your Amygdala was already hyperactive. You woke up closer to the Sapolsky Limit than you realized."
+            },
+            {
+                title: "Days Before: Accumulated Stress",
+                content: "<strong>Why didn't you sleep?</strong> You've been chronically stressed for weeks—financial pressure, relationship conflict, work deadlines. Each day of chronic stress physically remodels your brain: PFC dendrites retract, Amygdala grows. The system was already degraded."
+            },
+            {
+                title: "Months/Years Before: Environmental Design",
+                content: "<strong>Why the chronic stress?</strong> You're in a high-entropy environment with no BioBonds. No support system to down-regulate your stress. No predictable rhythms. No safety. You've been operating at the Sapolsky Limit for so long, the damage is structural."
+            },
+            {
+                title: "Lifetime: Early Development & Epigenetics",
+                content: "<strong>Why no BioBonds?</strong> Early childhood attachment patterns, cultural context, socioeconomic position. Adverse childhood experiences can epigenetically alter stress response systems. Some people start closer to the Limit than others through no fault of their own.<br><br><strong>The 'decision' to scream was made decades ago.</strong>"
+            }
+        ];
 
         // Progress tracking
         function updateProgress() {
@@ -1312,18 +1343,20 @@
                 feedback.style.display = 'block';
                 feedbackText.textContent = 'Early neuroplastic changes. PFC capacity decreasing. Amygdala reactivity increasing.';
             } else {
-                pfcEffect.innerHTML = '<strong>Effect:</strong> <span style="color: var(--danger);">Severe atrophy</span>.';
-                amygdalaEffect.innerHTML = '<strong>Effect:</strong> <span style="color: var(--danger);">Hypertrophied</span>.';
+                pfcEffect.innerHTML = '<strong>Effect:</strong> <span style="color: var(--danger);">Severe atrophy</span>';
+                amygdalaEffect.innerHTML = '<strong>Effect:</strong> <span style="color: var(--danger);">Hypertrophied</span>';
                 feedback.style.display = 'block';
                 feedbackText.textContent = 'Severe neuroplastic remodeling. The hardware can no longer run ethical software.';
             }
         }
 
+        // Symptom checker
         function toggleSymptom(element) {
             element.classList.toggle('checked');
             const checkbox = element.querySelector('h4');
             const isChecked = element.classList.contains('checked');
             checkbox.textContent = checkbox.textContent.replace(/[✓🔲]/g, '').trim() + (isChecked ? ' ✓' : ' 🔲');
+            element.setAttribute('aria-checked', isChecked);
             updateSymptomScore();
         }
 
@@ -1351,6 +1384,7 @@
             }
         }
 
+        // Timeline scrubber
         function updateTimeline(value) {
             const index = parseInt(value);
             const content = document.getElementById('timelineContent');
@@ -1358,20 +1392,267 @@
             content.innerHTML = `<h4>${data.title}</h4><p>${data.content}</p>`;
         }
 
+        // BioBond assessment
         function assessBioBond() {
-            const total = ['q1', 'q2', 'q3', 'q4', 'q5'].reduce((acc, id) => acc + parseInt(document.getElementById(id).value), 0);
+            const total = calculateBioBondScore();
             const result = document.getElementById('biobondResult');
             result.style.display = 'block';
             
             if (total >= 8) {
                 result.className = 'biobond-result biobond-strong';
-                result.innerHTML = `<h3>Strong BioBond: ${total}/10</h3><p>Robust external battery pack.</p>`;
+                result.innerHTML = `<h3>Strong BioBond: ${total}/10</h3><p>You have a robust external battery pack. This connection provides meaningful down-regulation and PFC support.</p>`;
+            } else if (total >= 5) {
+                result.className = 'biobond-result biobond-weak';
+                result.innerHTML = `<h3>Moderate BioBond: ${total}/10</h3><p>You have some support, but strengthening these connections could provide better stress regulation.</p>`;
             } else {
                 result.className = 'biobond-result biobond-weak';
-                result.innerHTML = `<h3>Weak BioBond: ${total}/10</h3><p>Seek support systems.</p>`;
+                result.innerHTML = `<h3>Weak BioBond: ${total}/10</h3><p>You may be operating close to the Sapolsky Limit without adequate support. Consider building deeper connections for stress regulation.</p>`;
             }
         }
 
+        // Helper function to calculate BioBond score
+        function calculateBioBondScore() {
+            try {
+                const q1 = parseInt(document.getElementById('q1')?.value || 0);
+                const q2 = parseInt(document.getElementById('q2')?.value || 0);
+                const q3 = parseInt(document.getElementById('q3')?.value || 0);
+                const q4 = parseInt(document.getElementById('q4')?.value || 0);
+                const q5 = parseInt(document.getElementById('q5')?.value || 0);
+                return q1 + q2 + q3 + q4 + q5;
+            } catch (e) {
+                return 0;
+            }
+        }
+
+        // Download responses function
+        function downloadResponses() {
+            // Check browser support
+            if (typeof Blob === 'undefined') {
+                alert('❌ Your browser doesn\'t support downloads. Please try printing instead or use a modern browser (Chrome, Firefox, Edge, Safari).');
+                return;
+            }
+
+            // Collect all checkpoint responses
+            const responses = {
+                timestamp: new Date().toISOString(),
+                studentName: prompt("Enter your name (optional):") || "Anonymous",
+                moduleTitle: "Stress and Decay: The Sapolsky Limit",
+                
+                checkpoint0: document.getElementById('checkpoint0')?.value || '',
+                checkpoint1: document.getElementById('checkpoint1')?.value || '',
+                checkpoint2: document.getElementById('checkpoint2')?.value || '',
+                checkpoint3: document.getElementById('checkpoint3')?.value || '',
+                checkpoint4: document.getElementById('checkpoint4')?.value || '',
+                checkpoint5: document.getElementById('checkpoint5')?.value || '',
+                checkpointFinal: document.getElementById('checkpointFinal')?.value || '',
+                
+                batteryLevel: batteryLevel,
+                symptomsChecked: document.querySelectorAll('.symptom-item.checked').length,
+                biobondScore: calculateBioBondScore()
+            };
+
+            // Create formatted text content
+            let content = `STRESS AND DECAY: THE SAPOLSKY LIMIT
+Student Responses
+Generated: ${new Date().toLocaleString()}
+Student: ${responses.studentName}
+
+═══════════════════════════════════════════════════════════
+
+MODULE 0: INTRODUCTION
+Question: Why is it crucial to understand ethics as a "metabolic state" rather than a "spiritual bedrock"?
+
+${responses.checkpoint0 || '[No response provided]'}
+
+═══════════════════════════════════════════════════════════
+
+MODULE 1: THE PFC BATTERY
+Question: When have you experienced hitting your Sapolsky Limit? What depleted your battery? What mode did you drop into?
+
+${responses.checkpoint1 || '[No response provided]'}
+
+Final Battery Level: ${responses.batteryLevel}%
+
+═══════════════════════════════════════════════════════════
+
+MODULE 2: NEUROCHEMISTRY OF DECAY
+Question: How does understanding the physical brain changes from chronic stress change your view of someone in poverty or trauma?
+
+${responses.checkpoint2 || '[No response provided]'}
+
+═══════════════════════════════════════════════════════════
+
+MODULE 3: RECOGNIZING THE CRASH
+Question: Describe a time you experienced one or more of these symptoms. What was happening in your life? What was your battery level?
+
+${responses.checkpoint3 || '[No response provided]'}
+
+Symptoms Checked: ${responses.symptomsChecked} / 4
+
+═══════════════════════════════════════════════════════════
+
+MODULE 4: DECISION TIMELINE
+Question: Pick a recent ethical failure. Trace it backward through the timeline. Where was the REAL failure point?
+
+${responses.checkpoint4 || '[No response provided]'}
+
+═══════════════════════════════════════════════════════════
+
+MODULE 5: THE GREAT ETHICAL GLITCH
+Question: When have you mistaken internal depletion (Physical) for external threat (Phenomenological)? What helped you realize the disconnect?
+
+${responses.checkpoint5 || '[No response provided]'}
+
+═══════════════════════════════════════════════════════════
+
+MODULE 6: FINAL SYNTHESIS
+Study Questions:
+1. The Audit: Identify a recent ethical failure. Trace the Sapolsky Timeline backward.
+2. The Projection: When did you mistake physical depletion for external threat?
+3. The BioBond: Who is your external regulator? If none, how can you construct one?
+
+${responses.checkpointFinal || '[No response provided]'}
+
+BioBond Assessment Score: ${responses.biobondScore} / 10
+
+═══════════════════════════════════════════════════════════
+
+END OF RESPONSES
+`;
+
+            // Create and download the file
+            try {
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `Sapolsky_Limit_Responses_${responses.studentName.replace(/\s+/g, '_')}_${Date.now()}.txt`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                // Show confirmation
+                alert('✅ Your responses have been downloaded!\n\nFile saved as: ' + link.download);
+            } catch (error) {
+                alert('❌ Download failed. Please try the Print option instead.\n\nError: ' + error.message);
+            }
+        }
+
+        // Print responses function (alternative for browsers with download issues)
+        function printResponses() {
+            const responses = {
+                checkpoint0: document.getElementById('checkpoint0')?.value || '',
+                checkpoint1: document.getElementById('checkpoint1')?.value || '',
+                checkpoint2: document.getElementById('checkpoint2')?.value || '',
+                checkpoint3: document.getElementById('checkpoint3')?.value || '',
+                checkpoint4: document.getElementById('checkpoint4')?.value || '',
+                checkpoint5: document.getElementById('checkpoint5')?.value || '',
+                checkpointFinal: document.getElementById('checkpointFinal')?.value || ''
+            };
+            
+            const studentName = prompt("Enter your name (optional):") || "Anonymous";
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Sapolsky Limit Responses - ${studentName}</title>
+                    <style>
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            padding: 40px; 
+                            line-height: 1.6;
+                            max-width: 800px;
+                            margin: 0 auto;
+                        }
+                        h1 { 
+                            color: #2c5282; 
+                            border-bottom: 3px solid #ed8936;
+                            padding-bottom: 10px;
+                        }
+                        h2 { 
+                            color: #4299e1; 
+                            margin-top: 30px;
+                            font-size: 1.3em;
+                        }
+                        .meta {
+                            background: #f7fafc;
+                            padding: 15px;
+                            border-left: 4px solid #4299e1;
+                            margin-bottom: 30px;
+                        }
+                        .response { 
+                            background: #f7fafc; 
+                            padding: 15px; 
+                            margin: 15px 0; 
+                            border-left: 4px solid #4299e1;
+                            white-space: pre-wrap;
+                        }
+                        .question {
+                            font-weight: bold;
+                            color: #2c5282;
+                            margin-top: 20px;
+                        }
+                        @media print {
+                            body { padding: 20px; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>Stress and Decay: The Sapolsky Limit</h1>
+                    <div class="meta">
+                        <p><strong>Student:</strong> ${studentName}</p>
+                        <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                        <p><strong>Time:</strong> ${new Date().toLocaleTimeString()}</p>
+                    </div>
+                    
+                    <h2>Module 0: Introduction</h2>
+                    <p class="question">Why is it crucial to understand ethics as a "metabolic state" rather than a "spiritual bedrock"?</p>
+                    <div class="response">${responses.checkpoint0 || '[No response provided]'}</div>
+                    
+                    <h2>Module 1: PFC Battery</h2>
+                    <p class="question">When have you experienced hitting your Sapolsky Limit? What depleted your battery? What mode did you drop into?</p>
+                    <div class="response">${responses.checkpoint1 || '[No response provided]'}</div>
+                    
+                    <h2>Module 2: Neurochemistry of Decay</h2>
+                    <p class="question">How does understanding the physical brain changes from chronic stress change your view of someone in poverty or trauma?</p>
+                    <div class="response">${responses.checkpoint2 || '[No response provided]'}</div>
+                    
+                    <h2>Module 3: Recognizing the Crash</h2>
+                    <p class="question">Describe a time you experienced one or more of these symptoms. What was happening in your life? What was your battery level?</p>
+                    <div class="response">${responses.checkpoint3 || '[No response provided]'}</div>
+                    
+                    <h2>Module 4: Decision Timeline</h2>
+                    <p class="question">Pick a recent ethical failure. Trace it backward through the timeline. Where was the REAL failure point?</p>
+                    <div class="response">${responses.checkpoint4 || '[No response provided]'}</div>
+                    
+                    <h2>Module 5: The Great Ethical Glitch</h2>
+                    <p class="question">When have you mistaken internal depletion (Physical) for external threat (Phenomenological)? What helped you realize the disconnect?</p>
+                    <div class="response">${responses.checkpoint5 || '[No response provided]'}</div>
+                    
+                    <h2>Module 6: Final Synthesis</h2>
+                    <p class="question">Complete the three study questions:</p>
+                    <ol>
+                        <li>The Audit: Identify a recent ethical failure. Trace the Sapolsky Timeline backward.</li>
+                        <li>The Projection: When did you mistake physical depletion for external threat?</li>
+                        <li>The BioBond: Who is your external regulator? If none, how can you construct one?</li>
+                    </ol>
+                    <div class="response">${responses.checkpointFinal || '[No response provided]'}</div>
+                    
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e2e8f0; text-align: center; color: #718096;">
+                        <p>End of Responses</p>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            setTimeout(() => {
+                printWindow.print();
+            }, 250);
+        }
+
+        // Initialize on load
         window.addEventListener('load', () => {
             updateProgress();
             updateBatteryDisplay();
